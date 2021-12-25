@@ -19,6 +19,8 @@ flutter:
         pluginClass: FLTVideoPlayerPlugin
       web:
         default_package: video_player_web
+      linux:
+        pluginClass: VideoPlayerPlugin
 
 dependencies:
   flutter:
