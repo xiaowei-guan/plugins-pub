@@ -1,4 +1,5 @@
 #include "include/video_player/video_player_plugin.h"
+#include "include/video_player/video_player.h"
 
 #include <flutter_linux/flutter_linux.h>
 #include <gtk/gtk.h>
