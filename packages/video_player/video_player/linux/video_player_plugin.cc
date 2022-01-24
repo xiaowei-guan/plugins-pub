@@ -12,7 +12,7 @@
 
 struct _VideoPlayerPlugin {
   GObject parent_instance;
-  GHashTable* plugin_channels;
+  FlBinaryMessenger* messenger;
 };
 
 G_DEFINE_TYPE(VideoPlayerPlugin, video_player_plugin, g_object_get_type())
@@ -25,29 +25,101 @@ static void video_player_plugin_class_init(VideoPlayerPluginClass* klass) {
   G_OBJECT_CLASS(klass)->dispose = video_player_plugin_dispose;
 }
 
-static void create_message_cb(
+static void create_message_channel_cb(
     FlBasicMessageChannel* channel, FlValue* message,
     FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
 
-static void video_player_plugin_init(VideoPlayerPlugin* self) {
-  self->plugin_channels = g_hash_table_new(g_str_hash, g_str_equal);
+static void dispose_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void initialize_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void set_looping_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void set_volume_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void set_playback_speed_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void play_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void position_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void seek_to_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void pause_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void set_mix_with_others_message_channel_cb(
+    FlBasicMessageChannel* channel, FlValue* message,
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+
+static void video_player_plugin_create_channel(
+    VideoPlayerPlugin* self, const gchar* channel_name,
+    FlBasicMessageChannelMessageHandler handler) {
+  g_autoptr(FlStandardMessageCodec) codec = fl_standard_message_codec_new();
+  g_autoptr(FlBasicMessageChannel) channel = fl_basic_message_channel_new(
+      self->messenger, channel_name, FL_MESSAGE_CODEC(codec));
+  fl_basic_message_channel_set_message_handler(
+      channel, handler, g_object_ref(self), g_object_unref);
 }
 
-static void video_player_plugin_setup_channel(VideoPlayerPlugin* self,
-                                              FlPluginRegistrar* registrar) {
-  g_autoptr(FlStandardMessageCodec) codec = fl_standard_message_codec_new();
-  FlBinaryMessenger* messenger = fl_plugin_registrar_get_messenger(registrar)
-      g_autoptr(FlBasicMessageChannel) create_channel =
-          fl_basic_message_channel_new(
-              messenger, "dev.flutter.pigeon.VideoPlayerApi.create",
-              FL_MESSAGE_CODEC(codec));
-  fl_basic_message_channel_set_message_handler(
-      create_channel, create_message_cb, g_object_ref(self), g_object_unref);
+static void video_player_plugin_init(VideoPlayerPlugin* self) {}
+
+static void video_player_plugin_setup_channel(VideoPlayerPlugin* self) {
+  video_player_plugin_create_channel(self,
+                                     "dev.flutter.pigeon.VideoPlayerApi.create",
+                                     create_message_channel_cb);
+  video_player_plugin_create_channel(
+      self, "dev.flutter.pigeon.VideoPlayerApi.dispose",
+      dispose_message_channel_cb);
+  video_player_plugin_create_channel(
+      self, "dev.flutter.pigeon.VideoPlayerApi.initialize",
+      initialize_message_channel_cb);
+  video_player_plugin_create_channel(
+      self, "dev.flutter.pigeon.VideoPlayerApi.setLooping",
+      set_looping_message_channel_cb);
+  video_player_plugin_create_channel(
+      self, "dev.flutter.pigeon.VideoPlayerApi.setVolume",
+      set_volume_message_channel_cb);
+  video_player_plugin_create_channel(
+      self, "dev.flutter.pigeon.VideoPlayerApi.setPlaybackSpeed",
+      set_playback_speed_message_channel_cb);
+  video_player_plugin_create_channel(
+      self, "dev.flutter.pigeon.VideoPlayerApi.play", play_message_channel_cb);
+  video_player_plugin_create_channel(
+      self, "dev.flutter.pigeon.VideoPlayerApi.position",
+      position_message_channel_cb);
+  video_player_plugin_create_channel(self,
+                                     "dev.flutter.pigeon.VideoPlayerApi.seekTo",
+                                     seek_to_message_channel_cb);
+  video_player_plugin_create_channel(self,
+                                     "dev.flutter.pigeon.VideoPlayerApi.pause",
+                                     pause_message_channel_cb);
+  video_player_plugin_create_channel(
+      self, "dev.flutter.pigeon.VideoPlayerApi.setMixWithOthers",
+      set_mix_with_others_message_channel_cb);
 }
 
 void video_player_plugin_register_with_registrar(FlPluginRegistrar* registrar) {
   VideoPlayerPlugin* plugin = VIDEO_PLAYER_PLUGIN(
       g_object_new(video_player_plugin_get_type(), nullptr));
-  video_player_plugin_setup_channel(plugin, registrar);
+  plugin->messenger = fl_plugin_registrar_get_messenger(registrar);
+  video_player_plugin_setup_channel(plugin);
   g_object_unref(plugin);
 }
