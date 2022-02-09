@@ -22,6 +22,31 @@ static void video_player_class_init(VideoPlayerClass* klass) {
   G_OBJECT_CLASS(klass)->dispose = video_player_dispose;
 }
 
+bool video_player_create(VideoPlayer* self, const char* path) {
+  self->instance = libvlc_new(0, NULL);
+  if (self->instance == nullptr) {
+    printf("libvlc new fail!\n");
+    return false;
+  }
+
+  if (g_str_has_prefix(path, "http")) {
+    self->media = libvlc_media_new_location(self->instance, path);
+  } else {
+    self->media = libvlc_media_new_path(self->instance, path);
+  }
+  if (self->media == nullptr) {
+    printf("libvlc create media fail!\n");
+    return false;
+  }
+
+  self->meida_player = libvlc_media_player_new_from_media(self->media);
+  if (self->meida_player == nullptr) {
+    printf("libvlc create media player fail!\n");
+    return false;
+  }
+  return true;
+}
+
 int video_player_play(VideoPlayer* self) {
   return libvlc_media_player_play(self->meida_player);
 }

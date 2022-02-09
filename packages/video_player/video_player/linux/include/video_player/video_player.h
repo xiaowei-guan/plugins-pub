@@ -11,6 +11,8 @@ typedef struct {
 
 GType video_player_get_type();
 
+bool video_player_create();
+
 int video_player_play(VideoPlayer* player);
 
 void video_player_pause(VideoPlayer* player);
