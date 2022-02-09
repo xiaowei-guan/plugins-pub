@@ -17,9 +17,9 @@ void video_player_pause(VideoPlayer* player);
 
 void video_player_set_looping(VideoPlayer* player, bool is_looping);
 
-void video_player_set_volume(VideoPlayer* player, double volume);
+int video_player_set_volume(VideoPlayer* player, double volume);
 
-void video_player_set_play_back_speed(VideoPlayer* player, double speed);
+int video_player_set_play_back_speed(VideoPlayer* player, double speed);
 
 void video_player_seek(VideoPlayer* player, int position);
 

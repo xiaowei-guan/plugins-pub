@@ -22,18 +22,30 @@ static void video_player_class_init(VideoPlayerClass* klass) {
   G_OBJECT_CLASS(klass)->dispose = video_player_dispose;
 }
 
-int video_player_play(VideoPlayer* player) {
-  return libvlc_media_player_play(player->meida_player);
+int video_player_play(VideoPlayer* self) {
+  return libvlc_media_player_play(self->meida_player);
 }
 
-void video_player_pause(VideoPlayer* player) {}
+void video_player_pause(VideoPlayer* self) {
+  libvlc_media_player_pause(self->meida_player);
+}
 
-void video_player_set_looping(VideoPlayer* player, bool is_looping) {}
+void video_player_set_looping(VideoPlayer* self, bool is_looping) {
+  libvlc_media_add_option(self->media, is_looping ? "--loop" : "--no-loop");
+}
 
-void video_player_set_volume(VideoPlayer* player, double volume) {}
+int video_player_set_volume(VideoPlayer* self, double volume) {
+  return libvlc_audio_set_volume(self->meida_player, (int)volume);
+}
 
-void video_player_set_play_back_speed(VideoPlayer* player, double speed) {}
+int video_player_set_play_back_speed(VideoPlayer* self, double speed) {
+  return libvlc_media_player_set_rate(self->meida_player, speed);
+}
 
-void video_player_seek(VideoPlayer* player, int position) {}
+void video_player_seek(VideoPlayer* self, int position) {
+  libvlc_media_player_set_time(self->meida_player, position);
+}
 
-int video_player_get_position(VideoPlayer* player) { return 0; }
+int video_player_get_position(VideoPlayer* self) {
+  return libvlc_media_player_get_time(self->meida_player);
+}
