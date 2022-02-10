@@ -2,7 +2,7 @@
 
 #include <vlc/vlc.h>
 
-#define VIDEO_PLAYER_(obj) \
+#define VIDEO_PLAYER(obj) \
   (G_TYPE_CHECK_INSTANCE_CAST((obj), video_player_get_type(), VideoPlayer))
 
 struct _VideoPlayer {
@@ -10,21 +10,53 @@ struct _VideoPlayer {
   libvlc_instance_t* instance;
   libvlc_media_t* media;
   libvlc_media_player_t* meida_player;
+  unsigned video_width;
+  unsigned video_height;
 };
 
 G_DEFINE_TYPE(VideoPlayer, video_player, g_object_get_type())
 
-static void video_player_dispose(GObject* object) {}
+static void video_player_dispose(GObject* object) {
+  VideoPlayer* self = VIDEO_PLAYER(object);
+  if (self->meida_player) {
+    libvlc_media_player_stop(self->meida_player);
+    libvlc_media_player_release(self->meida_player);
+    self->meida_player = NULL;
+  }
 
-static void video_player_init(VideoPlayer* self) {}
+  if (self->media) {
+    libvlc_media_release(self->media);
+    self->media = NULL;
+  }
+
+  if (self->instance) {
+    libvlc_release(self->instance);
+    self->instance = NULL;
+  }
+}
+
+static void video_player_init(VideoPlayer* self) {
+  self->instance = NULL;
+  self->media = NULL;
+  self->meida_player = NULL;
+}
 
 static void video_player_class_init(VideoPlayerClass* klass) {
   G_OBJECT_CLASS(klass)->dispose = video_player_dispose;
 }
 
+static void* prepare_render_callback(void* opaque, void** planes) {
+  return NULL;
+}
+
+static void post_render_callback(void* opaque, void* picture,
+                                 void* const* planes) {}
+
+static void video_display_callback(void* opaque, void* picture) {}
+
 bool video_player_create(VideoPlayer* self, const char* path) {
   self->instance = libvlc_new(0, NULL);
-  if (self->instance == nullptr) {
+  if (self->instance == NULL) {
     printf("libvlc new fail!\n");
     return false;
   }
@@ -34,16 +66,29 @@ bool video_player_create(VideoPlayer* self, const char* path) {
   } else {
     self->media = libvlc_media_new_path(self->instance, path);
   }
-  if (self->media == nullptr) {
+  if (self->media == NULL) {
     printf("libvlc create media fail!\n");
     return false;
   }
 
   self->meida_player = libvlc_media_player_new_from_media(self->media);
-  if (self->meida_player == nullptr) {
+  if (self->meida_player == NULL) {
     printf("libvlc create media player fail!\n");
     return false;
   }
+
+  if (!libvlc_video_get_size(self->meida_player, 0, &self->video_width,
+                             &self->video_height)) {
+    printf("libvlc video get size fail!\n");
+    return false;
+  }
+
+  libvlc_video_set_callbacks(self->meida_player, prepare_render_callback,
+                             post_render_callback, video_display_callback,
+                             nullptr);
+
+  libvlc_video_set_format(self->meida_player, "RGBA", self->video_width,
+                          self->video_height, self->video_width * 4);
   return true;
 }
 
