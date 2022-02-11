@@ -12,6 +12,7 @@ struct _VideoPlayer {
   libvlc_media_player_t* meida_player;
   unsigned video_width;
   unsigned video_height;
+  FlTextureRegistrar* texture_registrar;
 };
 
 G_DEFINE_TYPE(VideoPlayer, video_player, g_object_get_type())
@@ -54,7 +55,8 @@ static void post_render_callback(void* opaque, void* picture,
 
 static void video_display_callback(void* opaque, void* picture) {}
 
-bool video_player_create(VideoPlayer* self, const char* path) {
+bool video_player_create(VideoPlayer* self, const char* path,
+                         FlPluginRegistrar* registrar) {
   self->instance = libvlc_new(0, NULL);
   if (self->instance == NULL) {
     printf("libvlc new fail!\n");
@@ -89,6 +91,8 @@ bool video_player_create(VideoPlayer* self, const char* path) {
 
   libvlc_video_set_format(self->meida_player, "RGBA", self->video_width,
                           self->video_height, self->video_width * 4);
+  self->texture_registrar =
+      fl_plugin_registrar_get_texture_registrar(registrar);
   return true;
 }
 
