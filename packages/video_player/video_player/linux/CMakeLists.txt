@@ -12,6 +12,7 @@ pkg_check_modules(VLC_PKG  libvlc)
 add_library(${PLUGIN_NAME} SHARED
   "video_player_plugin.cc"
   "video_player.cc"
+  "video_player_texture.cc"
 )
 apply_standard_settings(${PLUGIN_NAME})
 set_target_properties(${PLUGIN_NAME} PROPERTIES
