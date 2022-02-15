@@ -2,6 +2,8 @@
 
 #include <vlc/vlc.h>
 
+#include "include/video_player/video_player_texture.h"
+
 #define VIDEO_PLAYER(obj) \
   (G_TYPE_CHECK_INSTANCE_CAST((obj), video_player_get_type(), VideoPlayer))
 
@@ -13,6 +15,8 @@ struct _VideoPlayer {
   unsigned video_width;
   unsigned video_height;
   FlTextureRegistrar* texture_registrar;
+  VideoPlayerTexture* video_player_texture;
+  int64_t texture_id = 0;
 };
 
 G_DEFINE_TYPE(VideoPlayer, video_player, g_object_get_type())
@@ -33,6 +37,13 @@ static void video_player_dispose(GObject* object) {
   if (self->instance) {
     libvlc_release(self->instance);
     self->instance = NULL;
+  }
+
+  if (self->video_player_texture) {
+    fl_texture_registrar_unregister_texture(
+        self->texture_registrar, FL_TEXTURE(self->video_player_texture));
+    g_object_unref(self->video_player_texture);
+    self->video_player_texture = NULL;
   }
 }
 
@@ -93,6 +104,17 @@ bool video_player_create(VideoPlayer* self, const char* path,
                           self->video_height, self->video_width * 4);
   self->texture_registrar =
       fl_plugin_registrar_get_texture_registrar(registrar);
+  self->video_player_texture =
+      video_player_texture_new(NULL, self->video_width, self->video_height);
+  bool success = fl_texture_registrar_register_texture(
+      self->texture_registrar, FL_TEXTURE(self->video_player_texture));
+  if (!success) {
+    g_object_unref(self->video_player_texture);
+    self->video_player_texture = NULL;
+  } else {
+    self->texture_id =
+        reinterpret_cast<int64_t>(FL_TEXTURE(self->video_player_texture));
+  }
   return true;
 }
 
