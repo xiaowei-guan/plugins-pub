@@ -12,8 +12,8 @@ struct _VideoPlayer {
   libvlc_instance_t* instance;
   libvlc_media_t* media;
   libvlc_media_player_t* meida_player;
-  unsigned video_width;
-  unsigned video_height;
+  unsigned video_width = 0;
+  unsigned video_height = 0;
   FlTextureRegistrar* texture_registrar;
   VideoPlayerTexture* video_player_texture;
   int64_t texture_id = 0;
@@ -26,31 +26,31 @@ static void video_player_dispose(GObject* object) {
   if (self->meida_player) {
     libvlc_media_player_stop(self->meida_player);
     libvlc_media_player_release(self->meida_player);
-    self->meida_player = NULL;
+    self->meida_player = nullptr;
   }
 
   if (self->media) {
     libvlc_media_release(self->media);
-    self->media = NULL;
+    self->media = nullptr;
   }
 
   if (self->instance) {
     libvlc_release(self->instance);
-    self->instance = NULL;
+    self->instance = nullptr;
   }
 
   if (self->video_player_texture) {
     fl_texture_registrar_unregister_texture(
         self->texture_registrar, FL_TEXTURE(self->video_player_texture));
     g_object_unref(self->video_player_texture);
-    self->video_player_texture = NULL;
+    self->video_player_texture = nullptr;
   }
 }
 
 static void video_player_init(VideoPlayer* self) {
-  self->instance = NULL;
-  self->media = NULL;
-  self->meida_player = NULL;
+  self->instance = nullptr;
+  self->media = nullptr;
+  self->meida_player = nullptr;
 }
 
 static void video_player_class_init(VideoPlayerClass* klass) {
@@ -58,7 +58,9 @@ static void video_player_class_init(VideoPlayerClass* klass) {
 }
 
 static void* prepare_render_callback(void* opaque, void** planes) {
-  return NULL;
+  VideoPlayer* self = reinterpret_cast<VideoPlayer*>(opaque);
+  
+  return nullptr;
 }
 
 static void post_render_callback(void* opaque, void* picture,
@@ -68,8 +70,8 @@ static void video_display_callback(void* opaque, void* picture) {}
 
 bool video_player_create(VideoPlayer* self, const char* path,
                          FlPluginRegistrar* registrar) {
-  self->instance = libvlc_new(0, NULL);
-  if (self->instance == NULL) {
+  self->instance = libvlc_new(0, nullptr);
+  if (self->instance == nullptr) {
     printf("libvlc new fail!\n");
     return false;
   }
@@ -79,13 +81,13 @@ bool video_player_create(VideoPlayer* self, const char* path,
   } else {
     self->media = libvlc_media_new_path(self->instance, path);
   }
-  if (self->media == NULL) {
+  if (self->media == nullptr) {
     printf("libvlc create media fail!\n");
     return false;
   }
 
   self->meida_player = libvlc_media_player_new_from_media(self->media);
-  if (self->meida_player == NULL) {
+  if (self->meida_player == nullptr) {
     printf("libvlc create media player fail!\n");
     return false;
   }
@@ -98,19 +100,19 @@ bool video_player_create(VideoPlayer* self, const char* path,
 
   libvlc_video_set_callbacks(self->meida_player, prepare_render_callback,
                              post_render_callback, video_display_callback,
-                             nullptr);
+                             self);
 
   libvlc_video_set_format(self->meida_player, "RGBA", self->video_width,
                           self->video_height, self->video_width * 4);
   self->texture_registrar =
       fl_plugin_registrar_get_texture_registrar(registrar);
   self->video_player_texture =
-      video_player_texture_new(NULL, self->video_width, self->video_height);
+      video_player_texture_new(self->video_width, self->video_height);
   bool success = fl_texture_registrar_register_texture(
       self->texture_registrar, FL_TEXTURE(self->video_player_texture));
   if (!success) {
     g_object_unref(self->video_player_texture);
-    self->video_player_texture = NULL;
+    self->video_player_texture = nullptr;
   } else {
     self->texture_id =
         reinterpret_cast<int64_t>(FL_TEXTURE(self->video_player_texture));
@@ -145,3 +147,4 @@ void video_player_seek(VideoPlayer* self, int position) {
 int video_player_get_position(VideoPlayer* self) {
   return libvlc_media_player_get_time(self->meida_player);
 }
+
