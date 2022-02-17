@@ -1,11 +1,12 @@
 #include "include/video_player/video_player_plugin.h"
-#include "include/video_player/video_player.h"
 
 #include <flutter_linux/flutter_linux.h>
 #include <gtk/gtk.h>
 #include <sys/utsname.h>
 
 #include <cstring>
+
+#include "include/video_player/video_player.h"
 
 #define VIDEO_PLAYER_PLUGIN(obj)                                     \
   (G_TYPE_CHECK_INSTANCE_CAST((obj), video_player_plugin_get_type(), \
@@ -14,12 +15,16 @@
 struct _VideoPlayerPlugin {
   GObject parent_instance;
   FlBinaryMessenger* messenger;
+  GHashTable* video_table;
 };
 
 G_DEFINE_TYPE(VideoPlayerPlugin, video_player_plugin, g_object_get_type())
 
 static void video_player_plugin_dispose(GObject* object) {
-  G_OBJECT_CLASS(video_player_plugin_parent_class)->dispose(object);
+  VideoPlayerPlugin* self = VIDEO_PLAYER_PLUGIN(object);
+  if (self->video_table) {
+    g_hash_table_destroy(self->video_table);
+  }
 }
 
 static void video_player_plugin_class_init(VideoPlayerPluginClass* klass) {
@@ -28,7 +33,9 @@ static void video_player_plugin_class_init(VideoPlayerPluginClass* klass) {
 
 static void create_message_channel_cb(
     FlBasicMessageChannel* channel, FlValue* message,
-    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {}
+    FlBasicMessageChannelResponseHandle* response_handle, gpointer user_data) {
+  // VideoPlayerPlugin* self = static_cast<VideoPlayerPlugin*>(user_data);
+}
 
 static void dispose_message_channel_cb(
     FlBasicMessageChannel* channel, FlValue* message,
@@ -80,7 +87,9 @@ static void video_player_plugin_create_channel(
       channel, handler, g_object_ref(self), g_object_unref);
 }
 
-static void video_player_plugin_init(VideoPlayerPlugin* self) {}
+static void video_player_plugin_init(VideoPlayerPlugin* self) {
+  self->video_table = g_hash_table_new(g_int64_hash, g_int_equal);
+}
 
 static void video_player_plugin_setup_channel(VideoPlayerPlugin* self) {
   video_player_plugin_create_channel(self,

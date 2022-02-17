@@ -17,6 +17,7 @@ struct _VideoPlayer {
   FlTextureRegistrar* texture_registrar;
   VideoPlayerTexture* video_player_texture;
   int64_t texture_id = 0;
+  pthread_mutex_t buffer_mutex;
 };
 
 G_DEFINE_TYPE(VideoPlayer, video_player, g_object_get_type())
@@ -59,12 +60,20 @@ static void video_player_class_init(VideoPlayerClass* klass) {
 
 static void* prepare_render_callback(void* opaque, void** planes) {
   VideoPlayer* self = reinterpret_cast<VideoPlayer*>(opaque);
-  
+  pthread_mutex_lock(&self->buffer_mutex);
+  *planes = self->video_player_texture->buffer;
+  pthread_mutex_unlock(&self->buffer_mutex);
   return nullptr;
 }
 
 static void post_render_callback(void* opaque, void* picture,
-                                 void* const* planes) {}
+                                 void* const* planes) {
+  VideoPlayer* self = reinterpret_cast<VideoPlayer*>(opaque);
+  pthread_mutex_lock(&self->buffer_mutex);
+  fl_texture_registrar_mark_texture_frame_available(
+      self->texture_registrar, FL_TEXTURE(self->video_player_texture));
+  pthread_mutex_unlock(&self->buffer_mutex);
+}
 
 static void video_display_callback(void* opaque, void* picture) {}
 
@@ -147,4 +156,3 @@ void video_player_seek(VideoPlayer* self, int position) {
 int video_player_get_position(VideoPlayer* self) {
   return libvlc_media_player_get_time(self->meida_player);
 }
-
